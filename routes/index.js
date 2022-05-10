@@ -100,9 +100,7 @@ router.post('/create-payment', async function(req, res, next) {
     application_context:{
       "brand_name":"Gordon-Chan.net",
       "shipping_preference": "SET_PROVIDED_ADDRESS",
-      "permit_multiple_payment_tokens": true,
-      "return_url": "http://127.0.0.1/vault-returnUrl",
-      "cancel_url": "http://127.0.0.1/vault-cancelUrl"
+      "permit_multiple_payment_tokens": true
     },
     "purchase_units": [{
       "reference_id": "REFID-"+Date.now(),
@@ -300,8 +298,18 @@ router.get('/pay-w-payment-tokens/:tokenId/:amount', async function(req, res, ne
     console.log(e);
   }
 });
-router.get('/vault-returnUrl', function(req, res, next) {
+router.get('/vault-returnUrl', async function(req, res, next) {
+  console.log('req.params.approval_token_id: '+req.params.approval_token_id);
+  const response = await axios.post(`${PAYPAL_API}/v2/vault/approval-tokens/${req.params.approval_token_id}/confirm-payment-token`, data, {
+    headers: {
+        Authorization: `Bearer ${global_access_token}`,
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': getRequestId()
+    }
+  });
   console.log('vault-returnUrl reached');
+  console.log('response:');
+  console.log(response.data);
 });
 router.get('/vault-cancelUrl', function(req, res, next) {
   console.log('vault-cancelUrl reached');
