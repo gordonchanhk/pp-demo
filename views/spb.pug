@@ -1,0 +1,21 @@
+extends layout
+
+block content
+
+    h1 SPB
+    //- div
+    //-     label Currency:
+    //-     select.input-select#currency
+    //-         option(value="USD") USD
+    //-         option(value="GBP") GBP
+    //-         option(value="EUR") EUR
+    //-         option(value="HKD") HKD
+    //-         option(value="SGD") SGD
+    input#currency(type="hidden", value="USD")
+    div
+        label Amount:
+        input.input-amount#amount(value=120)
+    </div>
+    div#paypal-button-container
+    script(src='https://www.paypal.com/sdk/js?client-id='+clientId+'')
+    script(src="/javascripts/spb.js")

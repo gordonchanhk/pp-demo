@@ -1,0 +1,14 @@
+extends layout
+
+block content
+
+    h1 #{title}
+    input#currency(type="hidden",value="GBP")
+    div
+        label Amount:
+        input.input-amount#amount(value=120)
+
+    div.pp-message
+    div#paypal-button-container
+    script(src='https://www.paypal.com/sdk/js?client-id=AREgTB141zkfdvP_SDyuOOYfI16rdcJimzbIbd6xwp8cPqKvz3teNnHH1tNEz-WTrE6EOWUoSLk9dGJQ&currency=GBP&buyer-country=GB&intent=capture&components=buttons,messages&enable-funding=paylater')
+    script(src="/javascripts/pay-later.js")

@@ -1,0 +1,22 @@
+extends layout
+
+block content
+
+    h1 #{title}
+
+    ol
+        li Render the page without customer id to go through nomral SPB journey
+        li Fill a self-define customer id and click Update button to render the page with client token contain such customer id for SPB Vault journey
+        li For the 1st transaction the SPB look as normal, upon transaction complete, re-render the page to check if SPB show vaulted PayPal account
+
+    div
+        form(action="/spb-vault", method="POST")
+            label Customer ID:
+            input.input.input-customer#customerId(type="text", name='customerId',placeholder='Your system customer ID',width=100, style="width:230px;", value=customer_id)
+            button.btn Update SPB with customer ID
+    div
+        label Amount:
+        input.input.input-amount#amount(type="text",value=120)
+    div#paypal-button-container(style="width:350px;")
+    script(src='https://www.paypal.com/sdk/js?intent=capture&vault=true&currency=HKD&client-id='+PAYPAL_API_CLIENT, data-client-token=clientToken)
+    script(src="/javascripts/spb-vault.js")
