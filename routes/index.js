@@ -1,6 +1,7 @@
 var express = require('express');
 var axios = require('axios')
 const paypal = require('paypal-rest-sdk');
+const url = require('url');
 var router = express.Router();
 const PAYPAL_API = 'https://api-m.sandbox.paypal.com'
 require("dotenv").config();
@@ -98,29 +99,31 @@ router.post('/create-payment', async function(req, res, next) {
   var create_payment_json = {
     intent: 'CAPTURE',
     application_context:{
-      "brand_name":"Gordon-Chan.net",
-      "shipping_preference": "SET_PROVIDED_ADDRESS",
-      "permit_multiple_payment_tokens": true
+      "brand_name":"Gordon Store",
+      "shipping_preference": "NO_SHIPPING",
+      "return_url": "http://127.0.0.1:3000/return-url",
+      "cancel_url": "http://127.0.0.1:3000/cancel-url"
+    },
+    "payment_source": {
+      "paypal": {
+        "attributes": {
+          "customer": {
+            "id": req.body.customerId
+          },
+          "vault": {
+            "confirm_payment_token": "ON_ORDER_COMPLETION",
+            "usage_type": "MERCHANT",
+            "customer_type": "CONSUMER",
+            "permit_multiple_payment_tokens": true
+          }
+        }
+      }
     },
     "purchase_units": [{
       "reference_id": "REFID-"+Date.now(),
       amount: {
         currency_code: process.env.CURRENCY,
         value: req.body.amount
-      },
-      "shipping": {
-        "address": {
-            "address_line_1": "Addr 1a",
-            "address_line_2": "Addr 2a",
-            "admin_area_1": "CA",
-            "admin_area_2": "San Jose",
-            "country_code": "US",
-            "postal_code": "95131"
-        },
-        "method": "standard",
-        "name": {
-            "full_name": "Gordon Chan"
-        }
       }
     }]
   };
@@ -193,6 +196,7 @@ router.get('/create-order', function(req, res, next) {
 });
 
 router.get('/return-url', function(req, res, next) {
+  console.log('/return-url is called');
   const { paymentId, token, PayerID } = req.query;
   var execute_payment_json = {
     "payer_id": PayerID,
@@ -221,16 +225,17 @@ router.get('/create-payment-token', async function(req, res, next) {
   await getAccessToken();
   let requestID = getRequestId();
   let data = {
-    "customer_id": "testcustomer1",
+    "customer_id": "testcustomer3",
     "source": {
       "paypal": {
          "usage_type": "MERCHANT"
       }
     },
     "application_context": {
-        "locale": "en-US",
-        "return_url": "https://127.0.0.1:3000/vault-returnUrl",
-        "cancel_url": "https://127.0.0.1:3000/vault-cancelUrl"
+      "permit_multiple_payment_tokens": true,
+      "locale": "en-US",
+      "return_url": "http://127.0.0.1:3000/vault-returnUrl",
+      "cancel_url": "http://127.0.0.1:3000/vault-cancelUrl?status=failed"
     }
   };
   const response = await axios.post(`${PAYPAL_API}/v2/vault/payment-tokens`, data, {
@@ -298,24 +303,41 @@ router.get('/pay-w-payment-tokens/:tokenId/:amount', async function(req, res, ne
     console.log(e);
   }
 });
+
 router.get('/vault-returnUrl', async function(req, res, next) {
-  console.log('req.params.approval_token_id: '+req.params.approval_token_id);
-  const response = await axios.post(`${PAYPAL_API}/v2/vault/approval-tokens/${req.params.approval_token_id}/confirm-payment-token`, data, {
-    headers: {
-        Authorization: `Bearer ${global_access_token}`,
-        'Content-Type': 'application/json',
-        'PayPal-Request-Id': getRequestId()
-    }
-  });
-  console.log('vault-returnUrl reached');
-  console.log('response:');
-  console.log(response.data);
+  getAccessToken();
+  console.log(req.url);
+  const urlParams = url.parse(req.url,true).query;
+  console.log('urlParams:');
+  console.log(`${PAYPAL_API}/v2/vault/approval-tokens/${urlParams.approval_token_id}/confirm-payment-token`);
+  try{
+
+    const response = await axios.post(`${PAYPAL_API}/v2/vault/approval-tokens/${urlParams.approval_token_id}/confirm-payment-token`, {}, {
+      headers: {
+          Authorization: `Bearer ${global_access_token}`,
+          'Content-Type': 'application/json',
+          'PayPal-Request-Id': getRequestId()
+      }
+    });
+    console.log('vault-returnUrl reached');
+    console.log('response:');
+    console.log(response.data);
+    res.json(response.data);
+  } catch(e){
+    console.log(e);
+    res.json(e.response.data);
+  }
+
 });
 router.get('/vault-cancelUrl', function(req, res, next) {
+  console.log(req);
+  console.log("==========");
+  console.log(req.url);
   console.log('vault-cancelUrl reached');
 });
 
 router.get('/cancel-url', function(req, res, next) {
+  console.log('/return-url is called');
   res.render('cancel-url', { title: 'SPB', PAYPAL_API_CLIENT });
 });
 
